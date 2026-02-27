@@ -1,4 +1,4 @@
-import { Scribeberry } from "@scribeberry/sdk";
+import { Scribeberry, ScribeberryError } from "@scribeberry/sdk";
 import { NextRequest, NextResponse } from "next/server";
 
 const sb = new Scribeberry({
@@ -22,10 +22,14 @@ export async function POST(request: NextRequest) {
     return NextResponse.json(result);
   } catch (error) {
     console.error("Failed to generate note:", error);
-    return NextResponse.json(
-      { error: "Failed to generate note" },
-      { status: 500 }
-    );
+
+    // Pass through the SDK error message so the UI can show something useful
+    const message =
+      error instanceof ScribeberryError
+        ? error.message
+        : "Failed to generate note";
+    const status = error instanceof ScribeberryError ? error.status ?? 500 : 500;
+
+    return NextResponse.json({ error: message }, { status });
   }
 }
-

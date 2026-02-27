@@ -47,9 +47,9 @@ export default function Home() {
         }),
       });
 
-      if (!res.ok) throw new Error("Failed to generate note");
-      const result = await res.json();
-      setNoteResult(result);
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || "Failed to generate note");
+      setNoteResult(data);
     } catch (err) {
       setNoteError(
         err instanceof Error ? err.message : "Failed to generate note"
@@ -67,15 +67,15 @@ export default function Home() {
     hasTranscript && selectedTemplateId && !generatingNote && !isRecording;
 
   return (
-    <div className="min-h-screen bg-zinc-50 font-sans">
+    <div className="min-h-screen font-sans">
       {/* Header */}
-      <header className="border-b border-zinc-200 bg-white">
+      <header className="border-b border-white/[0.06] bg-white/[0.03] backdrop-blur-sm">
         <div className="mx-auto flex max-w-4xl items-center justify-between px-6 py-4">
           <div className="flex items-center gap-3">
-            <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-emerald-600 text-sm font-bold text-white">
+            <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-emerald-500 text-sm font-bold text-white">
               S
             </div>
-            <h1 className="text-lg font-semibold text-zinc-900">
+            <h1 className="text-lg font-semibold text-zinc-100">
               Scribeberry SDK Demo
             </h1>
           </div>
@@ -83,7 +83,7 @@ export default function Home() {
             href="https://www.npmjs.com/package/@scribeberry/sdk"
             target="_blank"
             rel="noopener noreferrer"
-            className="text-sm text-zinc-500 transition-colors hover:text-zinc-900"
+            className="text-sm text-zinc-500 transition-colors hover:text-zinc-300"
           >
             @scribeberry/sdk
           </a>
@@ -98,19 +98,19 @@ export default function Home() {
             H&P, Progress Note).
           </p>
           {loadingTemplates ? (
-            <div className="h-10 animate-pulse rounded-lg bg-zinc-100" />
+            <div className="h-10 animate-pulse rounded-lg bg-white/[0.05]" />
           ) : templates.length === 0 ? (
-            <p className="text-sm text-amber-600">
+            <p className="text-sm text-amber-400">
               No templates found. Create one in your Scribeberry dashboard.
             </p>
           ) : (
             <select
               value={selectedTemplateId}
               onChange={(e) => setSelectedTemplateId(e.target.value)}
-              className="w-full rounded-lg border border-zinc-300 bg-white px-3 py-2.5 text-sm text-zinc-900 shadow-sm transition-colors focus:border-emerald-500 focus:outline-none focus:ring-2 focus:ring-emerald-500/20"
+              className="w-full rounded-lg border border-white/[0.08] bg-white/[0.05] px-3 py-2.5 text-sm text-zinc-200 shadow-sm transition-colors focus:border-emerald-500/50 focus:outline-none focus:ring-2 focus:ring-emerald-500/20"
             >
               {templates.map((t) => (
-                <option key={t.id} value={t.id}>
+                <option key={t.id} value={t.id} className="bg-zinc-900">
                   {t.name}
                   {t.description ? ` — ${t.description}` : ""}
                 </option>
@@ -131,10 +131,10 @@ export default function Home() {
             <button
               onClick={isRecording ? transcription.stop : transcription.start}
               disabled={isConnecting}
-              className={`inline-flex items-center gap-2 rounded-lg px-5 py-2.5 text-sm font-medium text-white shadow-sm transition-all focus:outline-none focus:ring-2 focus:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50 ${
+              className={`inline-flex items-center gap-2 rounded-lg px-5 py-2.5 text-sm font-medium text-white shadow-sm transition-all focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-offset-zinc-900 disabled:cursor-not-allowed disabled:opacity-50 ${
                 isRecording
-                  ? "bg-red-600 hover:bg-red-700 focus:ring-red-500"
-                  : "bg-emerald-600 hover:bg-emerald-700 focus:ring-emerald-500"
+                  ? "bg-red-600 hover:bg-red-500 focus:ring-red-500"
+                  : "bg-emerald-600 hover:bg-emerald-500 focus:ring-emerald-500"
               }`}
             >
               {isConnecting ? (
@@ -158,14 +158,14 @@ export default function Home() {
                   setNoteResult(null);
                   setNoteError(null);
                 }}
-                className="rounded-lg px-4 py-2.5 text-sm font-medium text-zinc-600 transition-colors hover:bg-zinc-100 hover:text-zinc-900"
+                className="rounded-lg px-4 py-2.5 text-sm font-medium text-zinc-400 transition-colors hover:bg-white/[0.06] hover:text-zinc-200"
               >
                 Clear
               </button>
             )}
 
             {transcription.durationSeconds !== null && (
-              <span className="text-xs text-zinc-400">
+              <span className="text-xs text-zinc-500">
                 {formatDuration(transcription.durationSeconds)}
               </span>
             )}
@@ -175,22 +175,22 @@ export default function Home() {
           <div
             className={`min-h-[120px] rounded-lg border p-4 text-sm leading-relaxed transition-colors ${
               isRecording
-                ? "border-emerald-200 bg-emerald-50/50"
-                : "border-zinc-200 bg-zinc-50"
+                ? "border-emerald-500/20 bg-emerald-500/[0.06]"
+                : "border-white/[0.08] bg-white/[0.03]"
             }`}
           >
             {hasTranscript || transcription.partial ? (
               <>
-                <span className="text-zinc-900">{transcription.transcript}</span>
+                <span className="text-zinc-200">{transcription.transcript}</span>
                 {transcription.partial && (
-                  <span className="text-zinc-400">
+                  <span className="text-zinc-500">
                     {transcription.transcript ? " " : ""}
                     {transcription.partial}
                   </span>
                 )}
               </>
             ) : (
-              <span className="text-zinc-400">
+              <span className="text-zinc-600">
                 {isRecording
                   ? "Listening…"
                   : "Your transcript will appear here."}
@@ -199,7 +199,7 @@ export default function Home() {
           </div>
 
           {transcription.error && (
-            <p className="mt-2 text-sm text-red-600">{transcription.error}</p>
+            <p className="mt-2 text-sm text-red-400">{transcription.error}</p>
           )}
         </Section>
 
@@ -213,58 +213,57 @@ export default function Home() {
           <button
             onClick={generateNote}
             disabled={!canGenerate}
-            className="inline-flex items-center gap-2 rounded-lg bg-zinc-900 px-5 py-2.5 text-sm font-medium text-white shadow-sm transition-all hover:bg-zinc-800 focus:outline-none focus:ring-2 focus:ring-zinc-500 focus:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-40"
+            className="inline-flex items-center gap-2 rounded-lg bg-white/[0.1] px-5 py-2.5 text-sm font-medium text-zinc-200 shadow-sm transition-all hover:bg-white/[0.15] focus:outline-none focus:ring-2 focus:ring-zinc-500 focus:ring-offset-2 focus:ring-offset-zinc-900 disabled:cursor-not-allowed disabled:opacity-30"
           >
             {generatingNote && <Spinner />}
             {generatingNote ? "Generating…" : "Generate Note"}
           </button>
 
           {noteError && (
-            <p className="mt-3 text-sm text-red-600">{noteError}</p>
+            <p className="mt-3 text-sm text-red-400">{noteError}</p>
           )}
 
           {noteResult && (
-            <div className="mt-5 rounded-lg border border-zinc-200 bg-white shadow-sm">
-              <div className="flex items-center justify-between border-b border-zinc-100 px-5 py-3">
-                <span className="text-sm font-medium text-zinc-900">
+            <div className="mt-5 rounded-lg border border-white/[0.08] bg-white/[0.04] shadow-sm">
+              <div className="flex items-center justify-between border-b border-white/[0.06] px-5 py-3">
+                <span className="text-sm font-medium text-zinc-200">
                   {noteResult.template.name || "Generated Note"}
                 </span>
                 <button
                   onClick={() =>
                     navigator.clipboard.writeText(noteResult.note.markdown)
                   }
-                  className="rounded px-2 py-1 text-xs text-zinc-500 transition-colors hover:bg-zinc-100 hover:text-zinc-700"
+                  className="rounded px-2 py-1 text-xs text-zinc-500 transition-colors hover:bg-white/[0.06] hover:text-zinc-300"
                 >
                   Copy
                 </button>
               </div>
-              <div className="prose prose-sm max-w-none p-5 text-zinc-800">
-                {/* Render markdown as simple formatted text */}
+              <div className="max-w-none p-5">
                 {noteResult.note.markdown.split("\n").map((line, i) => {
                   if (line.startsWith("# ")) {
                     return (
-                      <h2 key={i} className="mb-2 mt-4 text-base font-semibold text-zinc-900 first:mt-0">
+                      <h2 key={i} className="mb-2 mt-4 text-base font-semibold text-zinc-100 first:mt-0">
                         {line.slice(2)}
                       </h2>
                     );
                   }
                   if (line.startsWith("## ")) {
                     return (
-                      <h3 key={i} className="mb-1 mt-3 text-sm font-semibold text-zinc-900">
+                      <h3 key={i} className="mb-1 mt-3 text-sm font-semibold text-zinc-200">
                         {line.slice(3)}
                       </h3>
                     );
                   }
                   if (line.startsWith("### ")) {
                     return (
-                      <h4 key={i} className="mb-1 mt-2 text-sm font-medium text-zinc-700">
+                      <h4 key={i} className="mb-1 mt-2 text-sm font-medium text-zinc-300">
                         {line.slice(4)}
                       </h4>
                     );
                   }
                   if (line.startsWith("- ")) {
                     return (
-                      <li key={i} className="ml-4 text-sm text-zinc-700">
+                      <li key={i} className="ml-4 text-sm text-zinc-400">
                         {line.slice(2)}
                       </li>
                     );
@@ -273,7 +272,7 @@ export default function Home() {
                     return <div key={i} className="h-2" />;
                   }
                   return (
-                    <p key={i} className="text-sm text-zinc-700">
+                    <p key={i} className="text-sm text-zinc-400">
                       {line}
                     </p>
                   );
@@ -285,13 +284,13 @@ export default function Home() {
       </main>
 
       {/* Footer */}
-      <footer className="border-t border-zinc-200 bg-white">
+      <footer className="border-t border-white/[0.06] bg-white/[0.02]">
         <div className="mx-auto flex max-w-4xl items-center justify-between px-6 py-4">
-          <p className="text-xs text-zinc-400">
+          <p className="text-xs text-zinc-600">
             Built with{" "}
             <a
               href="https://www.npmjs.com/package/@scribeberry/sdk"
-              className="underline hover:text-zinc-600"
+              className="underline hover:text-zinc-400"
             >
               @scribeberry/sdk
             </a>{" "}
@@ -301,7 +300,7 @@ export default function Home() {
             href="https://console.scribeberry.com/docs"
             target="_blank"
             rel="noopener noreferrer"
-            className="text-xs text-zinc-400 underline hover:text-zinc-600"
+            className="text-xs text-zinc-600 underline hover:text-zinc-400"
           >
             Documentation
           </a>
@@ -325,10 +324,10 @@ function Section({
   return (
     <section className="mb-8">
       <div className="mb-3 flex items-center gap-2.5">
-        <span className="flex h-6 w-6 items-center justify-center rounded-full bg-zinc-900 text-xs font-medium text-white">
+        <span className="flex h-6 w-6 items-center justify-center rounded-full bg-emerald-500/20 text-xs font-medium text-emerald-400">
           {number}
         </span>
-        <h2 className="text-base font-semibold text-zinc-900">{title}</h2>
+        <h2 className="text-base font-semibold text-zinc-200">{title}</h2>
       </div>
       {children}
     </section>

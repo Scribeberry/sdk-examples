@@ -43,11 +43,34 @@ const INITIAL_STATE: TranscriptionState = {
 };
 
 /**
+ * AudioWorklet processor source code, inlined as a Blob URL.
+ *
+ * Collects Float32 audio frames and converts them to Int16 PCM,
+ * then posts the buffer to the main thread via MessagePort.
+ */
+const WORKLET_SOURCE = `
+class PcmProcessor extends AudioWorkletProcessor {
+  process(inputs) {
+    const input = inputs[0]?.[0];
+    if (!input) return true;
+
+    const int16 = new Int16Array(input.length);
+    for (let i = 0; i < input.length; i++) {
+      int16[i] = Math.max(-32768, Math.min(32767, Math.round(input[i] * 32767)));
+    }
+    this.port.postMessage(int16.buffer, [int16.buffer]);
+    return true;
+  }
+}
+registerProcessor("pcm-processor", PcmProcessor);
+`;
+
+/**
  * React hook for realtime speech-to-text using the Scribeberry SDK.
  *
- * Handles microphone access, audio processing, and WebSocket streaming.
- * Uses the recommended `getRealtimeToken` callback pattern so the API key
- * is never exposed to the browser.
+ * Handles microphone access, audio processing (via AudioWorklet), and
+ * WebSocket streaming. Uses the recommended `getRealtimeToken` callback
+ * pattern so the API key is never exposed to the browser.
  *
  * @example
  * ```tsx
@@ -69,11 +92,15 @@ export function useTranscription(): TranscriptionState & TranscriptionActions {
   const sessionRef = useRef<RealtimeTranscriptionSession | null>(null);
   const mediaStreamRef = useRef<MediaStream | null>(null);
   const audioContextRef = useRef<AudioContext | null>(null);
-  const processorRef = useRef<ScriptProcessorNode | null>(null);
+  const workletNodeRef = useRef<AudioWorkletNode | null>(null);
+  const sourceRef = useRef<MediaStreamAudioSourceNode | null>(null);
 
   const cleanup = useCallback(() => {
-    processorRef.current?.disconnect();
-    processorRef.current = null;
+    workletNodeRef.current?.disconnect();
+    workletNodeRef.current = null;
+
+    sourceRef.current?.disconnect();
+    sourceRef.current = null;
 
     audioContextRef.current?.close();
     audioContextRef.current = null;
@@ -97,7 +124,7 @@ export function useTranscription(): TranscriptionState & TranscriptionActions {
         },
       });
 
-      // Request microphone access
+      // Request microphone access early so the user sees the permission prompt
       const stream = await navigator.mediaDevices.getUserMedia({
         audio: {
           channelCount: 1,
@@ -108,13 +135,29 @@ export function useTranscription(): TranscriptionState & TranscriptionActions {
       });
       mediaStreamRef.current = stream;
 
-      // Set up audio processing (PCM 16-bit, 16kHz, mono)
+      // Set up AudioContext and register the worklet processor
       const audioCtx = new AudioContext({ sampleRate: 16000 });
       audioContextRef.current = audioCtx;
 
+      const blob = new Blob([WORKLET_SOURCE], { type: "application/javascript" });
+      const workletUrl = URL.createObjectURL(blob);
+      await audioCtx.audioWorklet.addModule(workletUrl);
+      URL.revokeObjectURL(workletUrl);
+
       const source = audioCtx.createMediaStreamSource(stream);
-      const processor = audioCtx.createScriptProcessor(4096, 1, 1);
-      processorRef.current = processor;
+      sourceRef.current = source;
+
+      const workletNode = new AudioWorkletNode(audioCtx, "pcm-processor");
+      workletNodeRef.current = workletNode;
+
+      // Forward PCM buffers from the worklet to the SDK session
+      workletNode.port.onmessage = (e: MessageEvent<ArrayBuffer>) => {
+        try {
+          sessionRef.current?.sendAudio(e.data);
+        } catch {
+          // Session closing — safe to ignore
+        }
+      };
 
       // Start the transcription session
       const session = sb.realtime.transcribe({
@@ -123,8 +166,10 @@ export function useTranscription(): TranscriptionState & TranscriptionActions {
       });
       sessionRef.current = session;
 
-      // Wire up event handlers
+      // Wait for the WebSocket to be ready before streaming audio.
       session.on("started", () => {
+        source.connect(workletNode);
+        workletNode.connect(audioCtx.destination);
         setState((s) => ({ ...s, status: "recording" }));
       });
 
@@ -158,23 +203,6 @@ export function useTranscription(): TranscriptionState & TranscriptionActions {
           durationSeconds: result.durationSeconds,
         }));
       });
-
-      // Stream microphone audio to the session
-      processor.onaudioprocess = (e) => {
-        if (!sessionRef.current) return;
-        const float32 = e.inputBuffer.getChannelData(0);
-        const int16 = new Int16Array(float32.length);
-        for (let i = 0; i < float32.length; i++) {
-          int16[i] = Math.max(
-            -32768,
-            Math.min(32767, Math.round(float32[i] * 32767))
-          );
-        }
-        sessionRef.current.sendAudio(int16.buffer);
-      };
-
-      source.connect(processor);
-      processor.connect(audioCtx.destination);
     } catch (err) {
       const message =
         err instanceof Error ? err.message : "Failed to start transcription";
@@ -199,4 +227,3 @@ export function useTranscription(): TranscriptionState & TranscriptionActions {
 
   return { ...state, start, stop, clear };
 }
-
