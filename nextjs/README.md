@@ -2,7 +2,7 @@
 
 A minimal Next.js app demonstrating the [`@scribeberry/sdk`](https://www.npmjs.com/package/@scribeberry/sdk) for:
 
-- **Realtime transcription** — Record from your microphone with live speech-to-text
+- **Realtime transcription** — Record from your microphone with live speech-to-text via `useTranscription` from `@scribeberry/sdk/react`
 - **Template selection** — Choose a medical note template (SOAP, H&P, etc.)
 - **AI note generation** — Generate structured clinical notes from the transcript
 
@@ -45,18 +45,18 @@ Open [http://localhost:3000](http://localhost:3000).
 ```
 Browser                          Next.js Server                 Scribeberry API
 ──────                           ──────────────                 ───────────────
-                                         
+
   page.tsx ──── GET /api/templates ──── sb.templates.list() ─── GET /templates
-                                         
+
   useTranscription() ── POST /api/realtime-token ── sb.realtime.createToken()
-       │                                         
+       │                    (from @scribeberry/sdk/react)
        └── WebSocket ──────────────────────────────── Realtime transcription
-                                         
+
   page.tsx ── POST /api/notes/generate ── sb.notes.generate() ── POST /notes
 ```
 
 - **API key stays server-side** — The browser never sees your `sk_test_*` / `sk_live_*` key
-- **Realtime uses temporary tokens** — The `useTranscription` hook fetches a short-lived `sb_rt_*` token via the API route
+- **Realtime uses temporary tokens** — `useTranscription` fetches a short-lived `sb_rt_*` token via your API route
 - **All SDK calls go through API routes** — Clean separation of server and client concerns
 
 ### Key Files
@@ -64,10 +64,10 @@ Browser                          Next.js Server                 Scribeberry API
 | File | Description |
 |------|-------------|
 | `app/page.tsx` | Main UI — template picker, transcription, note display |
-| `app/hooks/use-transcription.ts` | React hook encapsulating mic access + SDK streaming |
 | `app/api/templates/route.ts` | Lists available templates |
 | `app/api/notes/generate/route.ts` | Generates a note from transcript + template |
 | `app/api/realtime-token/route.ts` | Creates a temporary token for browser WebSocket access |
+| `app/api/status/route.ts` | Config check — shows setup guide if API key is missing |
 
 ## Learn More
 

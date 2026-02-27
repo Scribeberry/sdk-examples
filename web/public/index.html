@@ -1,0 +1,341 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Scribeberry SDK — Express + Vanilla JS Example</title>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --bg: #0c0f14;
+      --surface: rgba(255,255,255,0.03);
+      --border: rgba(255,255,255,0.06);
+      --text: #e4e4e7;
+      --text-muted: #71717a;
+      --text-dim: #52525b;
+      --accent: #10b981;
+      --accent-muted: rgba(16,185,129,0.15);
+      --danger: #ef4444;
+      --radius: 8px;
+    }
+
+    body {
+      font-family: system-ui, -apple-system, sans-serif;
+      background: linear-gradient(165deg, #0c0f14 0%, #0f1a15 35%, #0f1520 65%, #14101f 100%);
+      background-attachment: fixed;
+      color: var(--text);
+      min-height: 100vh;
+      line-height: 1.6;
+    }
+
+    /* ── Layout ────────────────────────────────────── */
+
+    header, footer {
+      border-color: var(--border);
+      background: var(--surface);
+      backdrop-filter: blur(8px);
+    }
+    header { border-bottom: 1px solid var(--border); }
+    footer { border-top: 1px solid var(--border); }
+
+    .container {
+      max-width: 720px;
+      margin: 0 auto;
+      padding: 0 24px;
+    }
+
+    header .container {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding-top: 16px;
+      padding-bottom: 16px;
+    }
+
+    header .brand {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+
+    header .logo {
+      width: 32px; height: 32px;
+      background: var(--accent);
+      border-radius: var(--radius);
+      display: flex; align-items: center; justify-content: center;
+      font-weight: 700; font-size: 14px; color: #fff;
+    }
+
+    header h1 { font-size: 18px; font-weight: 600; }
+
+    header a, footer a {
+      color: var(--text-muted);
+      font-size: 13px;
+      text-decoration: none;
+      transition: color 0.15s;
+    }
+    header a:hover, footer a:hover { color: var(--text); }
+
+    footer .container {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding-top: 16px;
+      padding-bottom: 16px;
+      font-size: 12px;
+      color: var(--text-dim);
+    }
+    footer a { text-decoration: underline; }
+
+    main { padding: 32px 0; }
+
+    /* ── Sections ──────────────────────────────────── */
+
+    section { margin-bottom: 32px; }
+
+    .section-header {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      margin-bottom: 12px;
+    }
+
+    .step-number {
+      width: 24px; height: 24px;
+      border-radius: 50%;
+      background: var(--accent-muted);
+      color: var(--accent);
+      display: flex; align-items: center; justify-content: center;
+      font-size: 12px; font-weight: 600;
+    }
+
+    .section-header h2 { font-size: 16px; font-weight: 600; color: #d4d4d8; }
+
+    .hint { font-size: 14px; color: var(--text-muted); margin-bottom: 12px; }
+
+    /* ── Form controls ─────────────────────────────── */
+
+    select {
+      width: 100%;
+      padding: 10px 12px;
+      border: 1px solid rgba(255,255,255,0.08);
+      border-radius: var(--radius);
+      background: rgba(255,255,255,0.05);
+      color: var(--text);
+      font-size: 14px;
+      appearance: none;
+      outline: none;
+      transition: border-color 0.15s;
+    }
+    select:focus { border-color: rgba(16,185,129,0.5); }
+    select option { background: #18181b; }
+
+    /* ── Buttons ───────────────────────────────────── */
+
+    .btn {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      padding: 10px 20px;
+      border: none;
+      border-radius: var(--radius);
+      font-size: 14px;
+      font-weight: 500;
+      cursor: pointer;
+      transition: background 0.15s, opacity 0.15s;
+      color: #fff;
+    }
+    .btn:disabled { opacity: 0.4; cursor: not-allowed; }
+
+    .btn-record { background: var(--accent); }
+    .btn-record:not(:disabled):hover { background: #059669; }
+
+    .btn-stop { background: var(--danger); }
+    .btn-stop:not(:disabled):hover { background: #dc2626; }
+
+    .btn-secondary {
+      background: rgba(255,255,255,0.1);
+      color: #d4d4d8;
+    }
+    .btn-secondary:not(:disabled):hover { background: rgba(255,255,255,0.15); }
+
+    .btn-text {
+      background: none;
+      color: var(--text-muted);
+      padding: 10px 16px;
+    }
+    .btn-text:hover { background: rgba(255,255,255,0.06); color: var(--text); }
+
+    .controls { display: flex; align-items: center; gap: 12px; margin-bottom: 16px; }
+
+    /* ── Transcript box ────────────────────────────── */
+
+    .transcript-box {
+      min-height: 120px;
+      padding: 16px;
+      border: 1px solid rgba(255,255,255,0.08);
+      border-radius: var(--radius);
+      background: rgba(255,255,255,0.03);
+      font-size: 14px;
+      line-height: 1.7;
+      transition: border-color 0.2s, background 0.2s;
+    }
+
+    .transcript-box.recording {
+      border-color: rgba(16,185,129,0.2);
+      background: rgba(16,185,129,0.04);
+    }
+
+    .transcript-box .partial { color: var(--text-muted); }
+    .transcript-box .placeholder { color: var(--text-dim); }
+
+    /* ── Note output ───────────────────────────────── */
+
+    .note-card {
+      margin-top: 20px;
+      border: 1px solid rgba(255,255,255,0.08);
+      border-radius: var(--radius);
+      background: rgba(255,255,255,0.04);
+      overflow: hidden;
+    }
+
+    .note-card header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 12px 20px;
+      border-bottom: 1px solid var(--border);
+      background: transparent;
+      backdrop-filter: none;
+    }
+
+    .note-card header span { font-size: 14px; font-weight: 500; color: #d4d4d8; }
+
+    .note-card .copy-btn {
+      background: none; border: none; cursor: pointer;
+      font-size: 12px; color: var(--text-muted);
+      padding: 4px 8px; border-radius: 4px;
+      transition: background 0.15s, color 0.15s;
+    }
+    .note-card .copy-btn:hover { background: rgba(255,255,255,0.06); color: var(--text); }
+
+    .note-content { padding: 20px; font-size: 14px; color: #a1a1aa; line-height: 1.7; }
+    .note-content h2 { font-size: 16px; font-weight: 600; color: #f4f4f5; margin: 16px 0 8px; }
+    .note-content h2:first-child { margin-top: 0; }
+    .note-content h3 { font-size: 14px; font-weight: 600; color: #d4d4d8; margin: 12px 0 4px; }
+    .note-content h4 { font-size: 14px; font-weight: 500; color: #d4d4d8; margin: 8px 0 4px; }
+    .note-content li { margin-left: 16px; }
+    .note-content p { margin-bottom: 4px; }
+
+    .error { color: var(--danger); font-size: 14px; margin-top: 8px; }
+
+    /* ── Pulsing dot ───────────────────────────────── */
+
+    .pulse-dot {
+      width: 10px; height: 10px;
+      border-radius: 50%;
+      background: var(--danger);
+      animation: pulse 1.5s infinite;
+    }
+
+    @keyframes pulse {
+      0%, 100% { opacity: 1; transform: scale(1); }
+      50% { opacity: 0.6; transform: scale(1.3); }
+    }
+
+    /* ── Spinner ───────────────────────────────────── */
+
+    .spinner {
+      width: 16px; height: 16px;
+      border: 2px solid rgba(255,255,255,0.25);
+      border-top-color: #fff;
+      border-radius: 50%;
+      animation: spin 0.6s linear infinite;
+    }
+
+    @keyframes spin { to { transform: rotate(360deg); } }
+
+    .duration { font-size: 12px; color: var(--text-muted); }
+
+    .hidden { display: none !important; }
+  </style>
+</head>
+
+<body>
+  <!-- Header -->
+  <header>
+    <div class="container">
+      <div class="brand">
+        <div class="logo">S</div>
+        <h1>Scribeberry SDK Demo</h1>
+      </div>
+      <a href="https://www.npmjs.com/package/@scribeberry/sdk" target="_blank">@scribeberry/sdk</a>
+    </div>
+  </header>
+
+  <main class="container">
+    <!-- Step 1: Template -->
+    <section>
+      <div class="section-header">
+        <div class="step-number">1</div>
+        <h2>Choose a template</h2>
+      </div>
+      <p class="hint">Templates define the structure of the generated note (e.g. SOAP, H&P, Progress Note).</p>
+      <select id="template-select" disabled>
+        <option>Loading templates…</option>
+      </select>
+    </section>
+
+    <!-- Step 2: Record -->
+    <section>
+      <div class="section-header">
+        <div class="step-number">2</div>
+        <h2>Record a conversation</h2>
+      </div>
+      <p class="hint">Click record and speak into your microphone. The transcript updates in real-time.</p>
+
+      <div class="controls">
+        <button id="record-btn" class="btn btn-record">🎙 Start Recording</button>
+        <button id="clear-btn" class="btn btn-text hidden">Clear</button>
+        <span id="duration" class="duration hidden"></span>
+      </div>
+
+      <div id="transcript-box" class="transcript-box">
+        <span class="placeholder">Your transcript will appear here.</span>
+      </div>
+      <p id="record-error" class="error hidden"></p>
+    </section>
+
+    <!-- Step 3: Generate -->
+    <section>
+      <div class="section-header">
+        <div class="step-number">3</div>
+        <h2>Generate a note</h2>
+      </div>
+      <p class="hint">The SDK sends the transcript and selected template to the Scribeberry API, which returns a structured medical note.</p>
+
+      <button id="generate-btn" class="btn btn-secondary" disabled>Generate Note</button>
+      <p id="generate-error" class="error hidden"></p>
+      <div id="note-card" class="note-card hidden">
+        <header>
+          <span id="note-title">Generated Note</span>
+          <button class="copy-btn" id="copy-btn">Copy</button>
+        </header>
+        <div id="note-content" class="note-content"></div>
+      </div>
+    </section>
+  </main>
+
+  <!-- Footer -->
+  <footer>
+    <div class="container">
+      <span>Built with <a href="https://www.npmjs.com/package/@scribeberry/sdk">@scribeberry/sdk</a> + Express</span>
+      <a href="https://console.scribeberry.com/docs" target="_blank">Documentation</a>
+    </div>
+  </footer>
+
+  <script type="module" src="/app.js"></script>
+</body>
+</html>
+
