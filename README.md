@@ -4,25 +4,25 @@ Example applications demonstrating the [`@scribeberry/sdk`](https://www.npmjs.co
 
 ## Examples
 
-| Example | Description |
-| --- | --- |
-| [nextjs](./nextjs) | Next.js app with App Router, TypeScript, and Tailwind CSS |
+| Example | Stack | Description |
+| --- | --- | --- |
+| [nextjs](./nextjs) | Next.js 16 · React 19 · Tailwind CSS 4 | Realtime transcription + AI note generation |
 
 ## Getting Started
 
-Each example is a standalone project. Navigate into the example directory and follow the instructions in its README.
+Each example is a standalone project. Navigate into the example directory and follow its README:
 
 ```bash
 cd nextjs
 npm install
+cp .env.example .env.local   # then add your API key
 npm run dev
 ```
 
-You'll need a Scribeberry API key. Sign up at [scribeberry.com](https://scribeberry.com) to get one.
+You'll need a Scribeberry API key — sign up at [console.scribeberry.com](https://console.scribeberry.com).
 
 ## Links
 
-- [SDK Documentation](https://scribeberry.com/docs)
+- [SDK Documentation](https://console.scribeberry.com/docs)
 - [npm Package](https://www.npmjs.com/package/@scribeberry/sdk)
 - [Report Issues](https://github.com/Scribeberry/sdk-examples/issues)
-
